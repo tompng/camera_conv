@@ -179,16 +179,6 @@ function solve(){
   function addParams(params,val){
     coefs.push(params);
     vec.push(val);
-    return;
-    for(var i=0;i<size;i++){
-      for(var j=0;j<size;j++){
-        if(!coefs[i])coefs[i]=[];
-        if(!coefs[i][j])coefs[i][j]=0;
-        coefs[i][j]+=2*params[i]*params[j];
-      }
-      if(!vec[i])vec[i]=0;
-      vec[i]+=params[i]*val
-    }
   }
   hints.forEach(function(h){
     // a,b,c,d,e,f,x0,y0,w0=1
