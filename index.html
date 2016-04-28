@@ -1,0 +1,241 @@
+<script>
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+var edit=true;
+function initialPositions(){
+  var scale=0.7;
+  return [{x:-scale,y:-0.75*scale},{x:scale,y:-0.75*scale},{x:scale,y:0.75*scale},{x:-scale,y:0.75*scale}]
+}
+var positions = initialPositions();
+onload=function(){
+  video = document.querySelector('video');
+  if(navigator.getUserMedia){
+    navigator.getUserMedia(
+      {video:true,audio:false},
+      function(localMediaStream){
+        video.src = window.URL.createObjectURL(localMediaStream);
+        video.play();
+      },
+      showSample
+    );
+  }else{
+    showSample();
+  }
+  function showSample(){
+    var parent = video.parentNode;
+    var sample = document.createElement('div');
+    parent.insertBefore(sample, video);
+    parent.removeChild(video);
+    sample.className='sample';
+    for(var i=0;i<20;i++){
+      var msg=document.createElement('div');
+      msg.textContent='Camera Unavailable';
+      msg.style.fontFamily='sans-serif';
+      msg.style.left=video.width*(Math.random()-0.05);
+      msg.style.top=video.height*Math.random();
+      msg.style.fontSize=24+32*Math.random()+'px';
+      msg.style.position='absolute';
+      function f(){return Math.floor(15*Math.random()).toString(16)}
+      msg.style.color='#'+f()+f()+f();
+      transformKeys.forEach(function(key){
+        msg.style[key]='rotate('+360*Math.random()+'deg)'
+      })
+      sample.appendChild(msg);
+    }
+    video = sample;
+  }
+  renderCanvas();
+  canvas=document.querySelector('canvas');
+  var idx=null;
+  function pconv(e){
+    var x=e.pageX-canvas.offsetParent.offsetLeft,y=e.pageY-canvas.offsetParent.offsetTop;
+    return {x:(2*x-canvas.width)/canvas.width,y:(2*y-canvas.height)/canvas.width};
+  }
+  canvas.onmousedown=function(e){
+    if(!edit)return false;
+    var pos=pconv(e);
+    var dif=0.1;
+    idx=null;
+    for(var i in positions){
+      var p=positions[i]
+      var dx=p.x-pos.x,dy=p.y-pos.y,r=Math.sqrt(dx*dx+dy*dy);
+      if(r<dif){dif=r;idx=i;}
+    }
+  }
+  document.onmousemove=function(e){
+    if(!edit)return;
+    if(idx==null)return;
+    var pos=pconv(e);
+    var x=pos.x;
+    if(Math.abs(pos.x)>1)pos.x/=Math.abs(pos.x);
+    if(Math.abs(pos.y)>0.75)pos.y*=0.75/Math.abs(pos.y);
+    positions[idx]=pos;
+    renderCanvas();
+    return false;
+  }
+  document.onmouseup=function(e){idx=null;}
+}
+function renderCanvas(){
+  canvas=document.querySelector('canvas');
+  var size=canvas.width;
+  g=canvas.getContext('2d');
+  g.clearRect(0,0,canvas.width,canvas.height);
+  g.beginPath();
+  for(i in positions){
+    var p=positions[i];
+    g[i==0?'moveTo':'lineTo']((1+p.x)*size/2,(0.75+p.y)*size/2);
+  }
+  g.closePath();
+  g.lineWidth=3;
+  g.strokeStyle='black'
+  g.stroke();
+  g.strokeStyle='white'
+  g.lineWidth=1;
+  g.stroke();
+  g.strokeStyle='black'
+  g.fillStyle='white'
+  positions.forEach(function(p){
+    g.beginPath();g.arc((1+p.x)*size/2,(0.75+p.y)/2*size,10,0,2*Math.PI);
+    g.fill();
+    g.stroke();
+  })
+}
+
+
+function solveMatrix(matrix,vec){
+  var size=vec.length;
+  // var pivots=[];for(var i=0;i<size;i++)pivots[i]=i;
+  for(var i=0;i<size;i++){
+    var absmax=0,absindex=i;
+    for(var j=i;j<size;j++){
+      var abs=Math.abs(matrix[j][i]);
+      if(absmax<abs){absmax=abs;absindex=j}
+    }
+    // var i1=pivots[i],i2=pivots[absindex];pivots[i]=i2;pivots[absindex]=i1;
+    // var m1=matrix[i],m2=matrix[absindex];matrix[i]=m2;matrix[absindex]=m1;
+    // var v1=vec[i],v2=vec[absindex];vec[i]=v2;vec[absindex]=v1;
+    var c=matrix[i][i]*matrix[absindex][i]>0?1:-1
+    for(var j=i;j<size;j++)matrix[i][j]+=c*matrix[absindex][j]
+    vec[i]+=c*vec[absindex];
+
+    var a=matrix[i][i];
+    for(j=i;j<size;j++)matrix[i][j]/=a;
+    vec[i]/=a;
+    for(var j=i+1;j<size;j++){
+      var b=matrix[j][i];
+      for(var k=i;k<size;k++)matrix[j][k]-=b*matrix[i][k];
+      vec[j]-=b*vec[i];
+    }
+  }
+  for(var i=size-1;i>=0;i--){
+    for(var j=i-1;j>=0;j--)vec[j]-=matrix[j][i]*vec[i];
+  }
+  return vec;
+}
+function positionHints(){
+  return [
+    [positions[0].x,positions[0].y,-1,-0.75],
+    [positions[1].x,positions[1].y,+1,-0.75],
+    [positions[2].x,positions[2].y,+1,+0.75],
+    [positions[3].x,positions[3].y,-1,+0.75]
+  ];
+}
+function solve(){
+  hints=positionHints();
+  var coefs=[];
+  var vec=[];
+  var size=8;
+  function addParams(params,val){
+    coefs.push(params);
+    vec.push(val);
+    return;
+    for(var i=0;i<size;i++){
+      for(var j=0;j<size;j++){
+        if(!coefs[i])coefs[i]=[];
+        if(!coefs[i][j])coefs[i][j]=0;
+        coefs[i][j]+=2*params[i]*params[j];
+      }
+      if(!vec[i])vec[i]=0;
+      vec[i]+=params[i]*val
+    }
+  }
+  hints.forEach(function(h){
+    // a,b,c,d,e,f,x0,y0,w0=1
+    // (ax+by+x0-sx*(ex+fy+w0))
+    // (cx+dy+y0-sy*(ex+fy+w0))
+    ox=h[0],oy=h[1],sx=h[2],sy=h[3];
+    addParams([ox,oy,0,0,-sx*ox,-sx*oy,1,0],sx);
+    addParams([0,0,ox,oy,-sy*ox,-sy*oy,0,1],sy);
+  })
+  return solveMatrix(coefs,vec)
+}
+function switchEdit(){
+  edit=!edit;
+  wrapper=document.querySelector('.wrapper')
+  if(edit){
+    wrapper.className='wrapper edit'
+    renderCanvas();
+  }else{
+    wrapper.className='wrapper'
+    applyMatrix();
+  }
+}
+function resetEdit(){
+  positions=initialPositions();
+  if(edit){
+    renderCanvas();
+  }else{
+    applyMatrix();
+  }
+}
+var transformKeys=['transform','WebkitTransform','OTransform','MozTransform','MsTransform'];
+function applyMatrix(){
+  var abcdefxy=solve();
+  var hints = positionHints();
+  var a=abcdefxy[0],b=abcdefxy[1],c=abcdefxy[2],d=abcdefxy[3],e=abcdefxy[4],f=abcdefxy[5];
+  var x0=abcdefxy[6],y0=abcdefxy[7];
+  hints.forEach(function(h){
+    ox=h[0],oy=h[1],sx=h[2],sy=h[3];
+    var w=e*ox+f*oy+1;
+    var x=a*ox+b*oy+x0;
+    var y=c*ox+d*oy+y0;
+  })
+  // a b 0 x0 x
+  // c d 0 y0 y
+  // 0 0 0 0  z
+  // e f 0 1  w
+  var w=document.querySelector('canvas').width/2;
+  var matrix=[a,c,0,e/w,b,d,0,f/w,0,0,1,0,w*x0,w*y0,0,1].map(function(v){
+    return v.toString().match(/e-/)?0:v;
+  })
+  transform="matrix3d("+matrix.join(',')+")";
+  transformKeys.forEach(function(key){
+    video.style[key]=transform;
+  })
+}
+</script>
+<style>
+video{background:gray}
+.sample{width:640px;height:480px;background:silver;position:relative;overflow:hidden;}
+video, canvas, .sample{position:absolute;left:0;top:0;}
+.btn{cursor:pointer;padding:8px 12px;border-radius:5px;border:1px solid gray;text-align:center;background:white;}
+.btn:hover{background:#ddd;}
+.btns{position:absolute;left:10px;width:640px;top:520px;text-align:right;}
+.edit video, .edit .sample{
+  transform: none !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  -o-transform: none !important;
+  -ms-transform: none !important;
+}
+div.wrapper{position:absolute;left:10px;top:10px;width:640px;height:480px;overflow:hidden;}
+canvas{display:none}
+.edit canvas{display:block}
+</style>
+<div class='wrapper edit'>
+<video width=640 height=480></video>
+<canvas width=640 height=480></canvas>
+</div>
+<div class='btns'>
+<span class=btn onclick='if(confirm("reset?"))resetEdit()'>reset</span>
+<span class=btn onclick='switchEdit()'>switch</span>
+</div>
