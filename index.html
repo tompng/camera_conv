@@ -55,13 +55,25 @@ onload=function(){
     g.stroke();
     video.style.backgroundImage='url('+canvas.toDataURL()+')';
   }
+  window.onresize=function(){
+    var w=window.innerWidth;
+    var wrapper=document.querySelector('.wrapper');
+    var scale=(w-20)/640;
+    setStyleWithVendorPrefix(wrapper, 'transform', 'scale('+scale+', 1)');
+    document.querySelector('.wrapper-ratio').textContent = Math.round(100*scale)+'%';
+    setStyleWithVendorPrefix(wrapper, 'transformOrigin', 'top left');
+  }
+  window.onresize();
   setBackground();
   renderCanvas();
   canvas=document.querySelector('canvas');
   var idx=null;
   function pconv(e){
-    var x=e.pageX-canvas.offsetParent.offsetLeft,y=e.pageY-canvas.offsetParent.offsetTop;
-    return {x:(2*x-canvas.width)/canvas.width,y:(2*y-canvas.height)/canvas.width};
+    var wrapper=document.querySelector('.wrapper')
+    var offset=10;
+    var w=window.innerWidth-2*offset;
+    var x=e.pageX-offset,y=e.pageY-offset;
+    return {x:(2*x-w)/w,y:(2*y-canvas.height)/canvas.width};
   }
   canvas.onmousedown=function(e){
     if(!edit)return false;
@@ -201,6 +213,13 @@ function resetEdit(){
   }
 }
 var transformKeys=['transform','WebkitTransform','OTransform','MozTransform','MsTransform'];
+var vendorPrefixes=['','Webkit','O','Moz','Ms'];
+function setStyleWithVendorPrefix(el, key, value){
+  ['Webkit','O','Moz','Ms'].forEach(function(prefix){
+    el.style[prefix+key[0].toUpperCase()+key.substring(1)]=value;
+  })
+  el.style[key]=value;
+}
 function applyMatrix(){
   var abcdefxy=solve();
   var hints = positionHints();
@@ -220,10 +239,7 @@ function applyMatrix(){
   var matrix=[a,c,0,e/w,b,d,0,f/w,0,0,1,0,w*x0,w*y0,0,1].map(function(v){
     return v.toString().match(/e-/)?0:v;
   })
-  transform="matrix3d("+matrix.join(',')+")";
-  transformKeys.forEach(function(key){
-    video.style[key]=transform;
-  })
+  setStyleWithVendorPrefix(video, 'transform', "matrix3d("+matrix.join(',')+")");
 }
 </script>
 <style>
@@ -232,7 +248,7 @@ video{background:black;background-size:cover;background-position:center;backgrou
 video, canvas, .sample{position:absolute;left:0;top:0;}
 .btn{cursor:pointer;padding:8px 12px;border-radius:5px;border:1px solid gray;text-align:center;background:white;}
 .btn:hover{background:#ddd;}
-.btns{position:absolute;left:10px;width:640px;top:520px;text-align:right;}
+.btns{position:absolute;left:10px;right:10px;top:520px;text-align:right;}
 .edit video, .edit .sample{
   transform: none !important;
   -webkit-transform: none !important;
@@ -249,6 +265,7 @@ canvas{display:none}
 <canvas width=640 height=480></canvas>
 </div>
 <div class='btns'>
+<span class='wrapper-ratio'></span>
 <span class=btn onclick='if(confirm("reset?"))resetEdit()'>reset</span>
 <span class=btn onclick='switchEdit()'>switch</span>
 </div>
