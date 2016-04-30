@@ -2,8 +2,8 @@
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
 var edit=true;
 function initialPositions(){
-  var scale=0.7;
-  return [{x:-scale,y:-0.75*scale},{x:scale,y:-0.75*scale},{x:scale,y:0.75*scale},{x:-scale,y:0.75*scale}]
+  var scale=0.75;
+  return [{x:-scale,y:-scale},{x:scale,y:-scale},{x:scale,y:scale},{x:-scale,y:scale}]
 }
 
 function genBackgroundURL(){
@@ -72,14 +72,16 @@ onload=function(){
     var inner=document.querySelector('.wrapper-inner');
     var w=window.innerWidth-20;
     var h=window.innerHeight-20;
-    var vw=canvas.width=video.width=video.videoWidth||640;
-    var vh=canvas.height=video.height=video.videoHeight||480;
+    var vw=video.width=video.videoWidth||640;
+    var vh=video.height=video.videoHeight||480;
     inner.style.width=vw;
     inner.style.height=vh;
     if(fitmode){
       var scale=Math.min(w/vw,h/vh);
       w=scale*vw;h=scale*vh;
     }
+    canvas.width=w;
+    canvas.height=h;
     wrapper.style.left=(innerWidth-w)/2;
     wrapper.style.top=(innerHeight-h)/2;
 
@@ -100,7 +102,7 @@ onload=function(){
     var w=wrapper.offsetWidth;
     var h=wrapper.offsetHeight;
     var x=e.pageX-wrapper.offsetLeft,y=e.pageY-wrapper.offsetTop;
-    return {x:(2*x-w)/w,y:(2*y-h)/h*canvas.height/canvas.width};
+    return {x:(2*x-w)/w,y:(2*y-h)/h};
   }
   canvas.onmousedown=function(e){
     if(!edit)return false;
@@ -119,7 +121,7 @@ onload=function(){
     var pos=pconv(e);
     var x=pos.x;
     if(Math.abs(pos.x)>1)pos.x/=Math.abs(pos.x);
-    if(Math.abs(pos.y)>0.75)pos.y*=0.75/Math.abs(pos.y);
+    if(Math.abs(pos.y)>1)pos.y/=Math.abs(pos.y);
     positions[idx]=pos;
     renderCanvas();
     return false;
@@ -128,13 +130,14 @@ onload=function(){
 }
 function renderCanvas(){
   canvas=document.querySelector('canvas');
-  var size=canvas.width;
+  var width=canvas.width;
+  var height=canvas.height;
   g=canvas.getContext('2d');
   g.clearRect(0,0,canvas.width,canvas.height);
   g.beginPath();
   for(i in positions){
     var p=positions[i];
-    g[i==0?'moveTo':'lineTo']((1+p.x)*size/2,(0.75+p.y)*size/2);
+    g[i==0?'moveTo':'lineTo']((1+p.x)*width/2,(1+p.y)*height/2);
   }
   g.closePath();
   g.lineWidth=3;
@@ -146,7 +149,7 @@ function renderCanvas(){
   g.strokeStyle='black'
   g.fillStyle='white'
   positions.forEach(function(p){
-    g.beginPath();g.arc((1+p.x)*size/2,(0.75+p.y)/2*size,10,0,2*Math.PI);
+    g.beginPath();g.arc((1+p.x)*width/2,(1+p.y)/2*height,10,0,2*Math.PI);
     g.fill();
     g.stroke();
   })
@@ -184,11 +187,13 @@ function solveMatrix(matrix,vec){
   return vec;
 }
 function positionHints(){
+  var video=document.querySelector('video');
+  var w=video.width,h=video.height;
   return [
-    [positions[0].x,positions[0].y,-1,-0.75],
-    [positions[1].x,positions[1].y,+1,-0.75],
-    [positions[2].x,positions[2].y,+1,+0.75],
-    [positions[3].x,positions[3].y,-1,+0.75]
+    [positions[0].x,positions[0].y*h/w,-1,-h/w],
+    [positions[1].x,positions[1].y*h/w,+1,-h/w],
+    [positions[2].x,positions[2].y*h/w,+1,+h/w],
+    [positions[3].x,positions[3].y*h/w,-1,+h/w]
   ];
 }
 function solve(){
@@ -256,14 +261,14 @@ function applyMatrix(){
   // c d 0 y0 y
   // 0 0 0 0  z
   // e f 0 1  w
-  var w=document.querySelector('canvas').width/2;
+  var w=video.width/2;
   var matrix=[a,c,0,e/w,b,d,0,f/w,0,0,1,0,w*x0,w*y0,0,1].map(function(v){return v.toFixed(8)});
   setStyleWithVendorPrefix(video, 'transform', "matrix3d("+matrix.join(',')+")");
 }
 </script>
 <style>
 video{background:black;background-size:cover;background-position:center;background-repeat:no-repeat;}
-video, canvas, .sample{position:absolute;left:0;top:0;}
+video, canvas{position:absolute;left:0;top:0;}
 .btn{cursor:pointer;padding:8px 12px;border-radius:5px;border:1px solid gray;text-align:center;background:white;}
 .btn:hover{background:#ddd;}
 .btns{position:absolute;left:10px;right:10px;top:520px;text-align:right;}
@@ -275,7 +280,7 @@ video, canvas, .sample{position:absolute;left:0;top:0;}
   -ms-transform: none !important;
 }
 div.wrapper, div.wrapper-inner{position:absolute;left:0px;top:0px;overflow:hidden;}
-canvas{display:none}
+canvas{display:none;width:100%;height:100%;}
 .edit canvas{display:block}
 </style>
 <div class='wrapper edit'>
