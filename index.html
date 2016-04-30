@@ -234,7 +234,7 @@ function applyMatrix(){
   // e f 0 1  w
   var w=document.querySelector('canvas').width/2;
   var matrix=[a,c,0,e/w,b,d,0,f/w,0,0,1,0,w*x0,w*y0,0,1].map(function(v){
-    return v.toString().match(/e-/)?0:v;
+    return v.toFixed(8)
   })
   setStyleWithVendorPrefix(video, 'transform', "matrix3d("+matrix.join(',')+")");
 }
