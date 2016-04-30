@@ -70,8 +70,8 @@ onload=function(){
     var canvas=document.querySelector('canvas');
     var wrapper=document.querySelector('.wrapper');
     var inner=document.querySelector('.wrapper-inner');
-    var w=window.innerWidth-20;
-    var h=window.innerHeight-20;
+    var w=window.innerWidth;
+    var h=window.innerHeight;
     var vw=video.width=video.videoWidth||640;
     var vh=video.height=video.videoHeight||480;
     inner.style.width=vw;
@@ -80,10 +80,8 @@ onload=function(){
       var scale=Math.min(w/vw,h/vh);
       w=scale*vw;h=scale*vh;
     }
-    canvas.width=w;
-    canvas.height=h;
-    wrapper.style.left=(innerWidth-w)/2;
-    wrapper.style.top=(innerHeight-h)/2;
+    canvas.width=w*(window.devicePixelRatio||1);
+    canvas.height=h*(window.devicePixelRatio||1);
 
     wrapper.style.width=w;
     wrapper.style.height=h;
@@ -126,6 +124,17 @@ onload=function(){
     renderCanvas();
     return false;
   }
+  document.onclick=function(){
+    switchEdit(true);
+  }
+  document.onkeypress=function(e){
+    console.error(e.keyCode);
+    if(e.keyCode==13)switchEdit();
+    if(e.keyCode=='f'.charCodeAt(0))switchFitMode(false);
+    if(e.keyCode=='r'.charCodeAt(0)){
+      if(confirm("reset?"))resetEdit();
+    }
+  }
   document.onmouseup=function(e){idx=null;}
 }
 function renderCanvas(){
@@ -153,6 +162,18 @@ function renderCanvas(){
     g.fill();
     g.stroke();
   })
+  var messages=[
+    'ok: enter',
+    'fit: f',
+    'reset: r',
+  ]
+  var size=24*(window.devicePixelRatio||1);
+  g.font=size+'px monospace'
+  g.lineWidth=2
+  for(var i=0;i<messages.length;i++){
+    g.strokeText(messages[i],0,size*(i+1))
+    g.fillText(messages[i],0,size*(i+1))
+  }
 }
 
 
@@ -219,8 +240,9 @@ function switchFitMode(){
   fitmode=!fitmode;
   window.onresize();
 }
-function switchEdit(){
-  edit=!edit;
+function switchEdit(mode){
+  if(mode==undefined)edit=!edit;
+  else edit=mode;
   wrapper=document.querySelector('.wrapper')
   if(edit){
     wrapper.className='wrapper edit'
@@ -269,9 +291,6 @@ function applyMatrix(){
 <style>
 video{background:black;background-size:cover;background-position:center;background-repeat:no-repeat;}
 video, canvas{position:absolute;left:0;top:0;}
-.btn{cursor:pointer;padding:8px 12px;border-radius:5px;border:1px solid gray;text-align:center;background:white;}
-.btn:hover{background:#ddd;}
-.btns{position:absolute;left:10px;right:10px;top:520px;text-align:right;}
 .edit video, .edit .sample{
   transform: none !important;
   -webkit-transform: none !important;
@@ -288,9 +307,4 @@ canvas{display:none;width:100%;height:100%;}
     <video></video>
     <canvas></canvas>
   </div>
-</div>
-<div class='btns'>
-<span class=btn onclick='switchFitMode()'>fitmode</span>
-<span class=btn onclick='if(confirm("reset?"))resetEdit()'>reset</span>
-<span class=btn onclick='switchEdit()'>switch</span>
 </div>
