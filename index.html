@@ -179,16 +179,12 @@ function renderCanvas(){
 
 function solveMatrix(matrix,vec){
   var size=vec.length;
-  // var pivots=[];for(var i=0;i<size;i++)pivots[i]=i;
   for(var i=0;i<size;i++){
     var absmax=0,absindex=i;
     for(var j=i;j<size;j++){
       var abs=Math.abs(matrix[j][i]);
       if(absmax<abs){absmax=abs;absindex=j}
     }
-    // var i1=pivots[i],i2=pivots[absindex];pivots[i]=i2;pivots[absindex]=i1;
-    // var m1=matrix[i],m2=matrix[absindex];matrix[i]=m2;matrix[absindex]=m1;
-    // var v1=vec[i],v2=vec[absindex];vec[i]=v2;vec[absindex]=v1;
     var c=matrix[i][i]*matrix[absindex][i]>0?1:-1
     for(var j=i;j<size;j++)matrix[i][j]+=c*matrix[absindex][j]
     vec[i]+=c*vec[absindex];
