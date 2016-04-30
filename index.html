@@ -128,10 +128,13 @@ onload=function(){
     switchEdit(true);
   }
   document.onkeypress=function(e){
-    console.error(e.keyCode);
-    if(e.keyCode==13)switchEdit();
-    if(e.keyCode=='f'.charCodeAt(0))switchFitMode(false);
-    if(e.keyCode=='r'.charCodeAt(0)){
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    var ecode=13
+    var fcode='f'.charCodeAt(0);
+    var rcode='r'.charCodeAt(0)
+    if(e.keyCode==ecode||e.charCode==ecode)switchEdit();
+    if(e.keyCode==fcode||e.charCode==fcode)switchFitMode(false);
+    if(e.keyCode==rcode||e.charCode==rcode){
       if(confirm("reset?"))resetEdit();
     }
   }
