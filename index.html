@@ -163,12 +163,12 @@ function renderCanvas(){
     g.stroke();
   })
   var messages=[
-    'ok: enter',
-    'fit: f',
+    'ok:    enter',
+    'fit:   f',
     'reset: r',
   ]
-  var size=24*(window.devicePixelRatio||1);
-  g.font=size+'px monospace'
+  var size=20*(window.devicePixelRatio||1);
+  g.font=size+'px Courier, Monaco, monospace'
   g.lineWidth=2
   for(var i=0;i<messages.length;i++){
     g.strokeText(messages[i],0,size*(i+1))
