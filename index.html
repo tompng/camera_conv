@@ -48,6 +48,7 @@ function genBackgroundURL(){
 }
 
 var positions = initialPositions();
+var fitmode=true;
 onload=function(){
   video = document.querySelector('video');
   video.style.backgroundImage='url('+genBackgroundURL()+')';
@@ -64,12 +65,26 @@ onload=function(){
     alert('camera unavailable')
   }
   window.onresize=function(){
-    var w=window.innerWidth;
+    var video=document.querySelector('video');
     var wrapper=document.querySelector('.wrapper');
-    var scale=(w-20)/640;
-    setStyleWithVendorPrefix(wrapper, 'transform', 'scale('+scale+', 1)');
-    document.querySelector('.wrapper-ratio').textContent = Math.round(100*scale)+'%';
-    setStyleWithVendorPrefix(wrapper, 'transformOrigin', 'top left');
+    var inner=document.querySelector('.wrapper-inner');
+    var w=window.innerWidth-20;
+    var h=window.innerHeight-20;
+    var vw=video.videoWidth||640;
+    var vh=video.videoHeight||480;
+    if(fitmode){
+      var scale=Math.min(w/vw,h/vh);
+      w=scale*vw;h=scale*vh;
+    }
+    wrapper.style.left=(innerWidth-w)/2;
+    wrapper.style.top=(innerHeight-h)/2;
+
+    wrapper.style.width=w;
+    wrapper.style.height=h;
+
+    var sizes=[w/vw, h/vh].map(function(v){return v.toFixed(8)});
+    setStyleWithVendorPrefix(inner, 'transform', 'scale('+sizes.join(',')+')');
+    setStyleWithVendorPrefix(inner, 'transformOrigin', 'top left');
   }
   window.onresize();
   renderCanvas();
@@ -77,10 +92,10 @@ onload=function(){
   var idx=null;
   function pconv(e){
     var wrapper=document.querySelector('.wrapper')
-    var offset=10;
-    var w=window.innerWidth-2*offset;
-    var x=e.pageX-offset,y=e.pageY-offset;
-    return {x:(2*x-w)/w,y:(2*y-canvas.height)/canvas.width};
+    var w=wrapper.offsetWidth;
+    var h=wrapper.offsetHeight;
+    var x=e.pageX-wrapper.offsetLeft,y=e.pageY-wrapper.offsetTop;
+    return {x:(2*x-w)/w,y:(2*y-h)/h*canvas.height/canvas.width};
   }
   canvas.onmousedown=function(e){
     if(!edit)return false;
@@ -190,6 +205,10 @@ function solve(){
   })
   return solveMatrix(coefs,vec)
 }
+function switchFitMode(){
+  fitmode=!fitmode;
+  window.onresize();
+}
 function switchEdit(){
   edit=!edit;
   wrapper=document.querySelector('.wrapper')
@@ -233,9 +252,7 @@ function applyMatrix(){
   // 0 0 0 0  z
   // e f 0 1  w
   var w=document.querySelector('canvas').width/2;
-  var matrix=[a,c,0,e/w,b,d,0,f/w,0,0,1,0,w*x0,w*y0,0,1].map(function(v){
-    return v.toFixed(8)
-  })
+  var matrix=[a,c,0,e/w,b,d,0,f/w,0,0,1,0,w*x0,w*y0,0,1].map(function(v){return v.toFixed(8)});
   setStyleWithVendorPrefix(video, 'transform', "matrix3d("+matrix.join(',')+")");
 }
 </script>
@@ -254,15 +271,18 @@ video, canvas, .sample{position:absolute;left:0;top:0;}
   -ms-transform: none !important;
 }
 div.wrapper{position:absolute;left:10px;top:10px;width:640px;height:480px;overflow:hidden;}
+div.wrapper-inner{position:absolute;left:0px;top:0px;width:640px;height:480px;overflow:hidden;}
 canvas{display:none}
 .edit canvas{display:block}
 </style>
 <div class='wrapper edit'>
-<video width=640 height=480></video>
-<canvas width=640 height=480></canvas>
+  <div class='wrapper-inner'>
+    <video width=640 height=480></video>
+    <canvas width=640 height=480></canvas>
+  </div>
 </div>
 <div class='btns'>
-<span class='wrapper-ratio'></span>
+<span class=btn onclick='switchFitMode()'>fitmode</span>
 <span class=btn onclick='if(confirm("reset?"))resetEdit()'>reset</span>
 <span class=btn onclick='switchEdit()'>switch</span>
 </div>
