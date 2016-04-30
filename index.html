@@ -58,6 +58,7 @@ onload=function(){
       function(localMediaStream){
         video.src = window.URL.createObjectURL(localMediaStream);
         video.play();
+        video.addEventListener('loadedmetadata', window.onresize)
       },
       function(){alert('camera unavailable')}
     );
@@ -66,12 +67,15 @@ onload=function(){
   }
   window.onresize=function(){
     var video=document.querySelector('video');
+    var canvas=document.querySelector('canvas');
     var wrapper=document.querySelector('.wrapper');
     var inner=document.querySelector('.wrapper-inner');
     var w=window.innerWidth-20;
     var h=window.innerHeight-20;
-    var vw=video.videoWidth||640;
-    var vh=video.videoHeight||480;
+    var vw=canvas.width=video.width=video.videoWidth||640;
+    var vh=canvas.height=video.height=video.videoHeight||480;
+    inner.style.width=vw;
+    inner.style.height=vh;
     if(fitmode){
       var scale=Math.min(w/vw,h/vh);
       w=scale*vw;h=scale*vh;
@@ -85,6 +89,7 @@ onload=function(){
     var sizes=[w/vw, h/vh].map(function(v){return v.toFixed(8)});
     setStyleWithVendorPrefix(inner, 'transform', 'scale('+sizes.join(',')+')');
     setStyleWithVendorPrefix(inner, 'transformOrigin', 'top left');
+    renderCanvas();
   }
   window.onresize();
   renderCanvas();
@@ -258,7 +263,6 @@ function applyMatrix(){
 </script>
 <style>
 video{background:black;background-size:cover;background-position:center;background-repeat:no-repeat;}
-.sample{width:640px;height:480px;background:silver;position:relative;overflow:hidden;}
 video, canvas, .sample{position:absolute;left:0;top:0;}
 .btn{cursor:pointer;padding:8px 12px;border-radius:5px;border:1px solid gray;text-align:center;background:white;}
 .btn:hover{background:#ddd;}
@@ -270,15 +274,14 @@ video, canvas, .sample{position:absolute;left:0;top:0;}
   -o-transform: none !important;
   -ms-transform: none !important;
 }
-div.wrapper{position:absolute;left:10px;top:10px;width:640px;height:480px;overflow:hidden;}
-div.wrapper-inner{position:absolute;left:0px;top:0px;width:640px;height:480px;overflow:hidden;}
+div.wrapper, div.wrapper-inner{position:absolute;left:0px;top:0px;overflow:hidden;}
 canvas{display:none}
 .edit canvas{display:block}
 </style>
 <div class='wrapper edit'>
   <div class='wrapper-inner'>
-    <video width=640 height=480></video>
-    <canvas width=640 height=480></canvas>
+    <video></video>
+    <canvas></canvas>
   </div>
 </div>
 <div class='btns'>
